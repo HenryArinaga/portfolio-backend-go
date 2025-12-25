@@ -4,19 +4,24 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/henryarin/portfolio-backend-go/internal/api"
 	"github.com/henryarin/portfolio-backend-go/internal/config"
+	"github.com/henryarin/portfolio-backend-go/internal/db"
 	"github.com/henryarin/portfolio-backend-go/internal/middleware"
 )
 
 func main() {
 	cfg := config.Load()
 
-	mux := http.NewServeMux()
+	database := db.Open("blog.db")
+	if err := db.Init(database); err != nil {
+		log.Fatal(err)
+	}
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-	})
+	api.SetDB(database)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/posts", api.ListPosts)
 
 	handler := middleware.CORS(cfg.AllowedOrigin, mux)
 
