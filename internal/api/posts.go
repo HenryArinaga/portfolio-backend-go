@@ -56,3 +56,37 @@ func ListPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }
+
+func GetPostBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := r.URL.Path[len("/api/posts/"):]
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	var p Post
+	err := database.QueryRow(`
+		SELECT id, title, slug, content, created_at, published
+		FROM posts
+		WHERE slug = ? AND published = 1
+	`, slug).Scan(
+		&p.ID,
+		&p.Title,
+		&p.Slug,
+		&p.Content,
+		&p.CreatedAt,
+		&p.Published,
+	)
+
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(p)
+}
