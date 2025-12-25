@@ -13,7 +13,7 @@ import (
 func main() {
 	cfg := config.Load()
 
-	database := db.Open("blog.db")
+	database := db.Open(cfg.DBPath)
 	if err := db.Init(database); err != nil {
 		log.Fatal(err)
 	}
@@ -22,6 +22,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/posts", api.ListPosts)
+	mux.HandleFunc("/api/posts/", api.GetPostBySlug)
 
 	handler := middleware.CORS(cfg.AllowedOrigin, mux)
 
