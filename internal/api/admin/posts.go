@@ -4,9 +4,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
+
+type UpdatePostRequest struct {
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Published bool   `json:"published"`
+}
 
 type createPostRequest struct {
 	Title     string `json:"title"`
@@ -73,4 +80,54 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+func UpdatePost(db *sql.DB, adminToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method != http.MethodPut {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		auth := r.Header.Get("Authorization")
+		if adminToken == "" || auth != "Bearer "+adminToken {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		idStr := r.URL.Path[len("/api/admin/posts/"):]
+		if idStr == "" {
+			http.NotFound(w, r)
+			return
+		}
+
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			http.Error(w, "invalid post id", http.StatusBadRequest)
+			return
+		}
+
+		var req UpdatePostRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+
+		slug := strings.ToLower(strings.TrimSpace(req.Title))
+		slug = strings.ReplaceAll(slug, " ", "-")
+
+		_, err = db.Exec(`
+			UPDATE posts
+			SET title = ?, slug = ?, content = ?, published = ?
+			WHERE id = ?
+		`, req.Title, slug, req.Content, boolToInt(req.Published), id)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
 }
