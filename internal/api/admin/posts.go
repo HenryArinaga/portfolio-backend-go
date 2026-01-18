@@ -1,3 +1,4 @@
+// internal/api/admin/posts.go
 package admin
 
 import (
@@ -8,6 +9,15 @@ import (
 	"strings"
 	"time"
 )
+
+type Post struct {
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
+	Slug      string    `json:"slug"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	Published bool      `json:"published"`
+}
 
 type UpdatePostRequest struct {
 	Title     string `json:"title"`
@@ -129,5 +139,53 @@ func UpdatePost(db *sql.DB, adminToken string) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func ListPosts(db *sql.DB, adminToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		auth := r.Header.Get("Authorization")
+		if adminToken == "" || auth != "Bearer "+adminToken {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		rows, err := db.Query(`
+			SELECT id, title, slug, content, created_at, published
+			FROM posts
+			ORDER BY created_at DESC
+		`)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		posts := []Post{}
+
+		for rows.Next() {
+			var p Post
+			if err := rows.Scan(
+				&p.ID,
+				&p.Title,
+				&p.Slug,
+				&p.Content,
+				&p.CreatedAt,
+				&p.Published,
+			); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			posts = append(posts, p)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(posts)
 	}
 }

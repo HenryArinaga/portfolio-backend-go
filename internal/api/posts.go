@@ -1,3 +1,4 @@
+// internal/api/posts.go
 package api
 
 import (
@@ -35,7 +36,7 @@ func ListPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var posts []Post
+	posts := []Post{}
 
 	for rows.Next() {
 		var p Post
