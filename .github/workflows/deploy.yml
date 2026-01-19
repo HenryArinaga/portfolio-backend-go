@@ -1,26 +1,26 @@
 name: Deploy to EC2
 
-on:
-  push:
-    branches: [ "main" ]
+# on:
+#   push:
+#     branches: [ "main" ]
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+#     steps:
+      # - name: Checkout repo
+      #   uses: actions/checkout@v4
 
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/portfolio-backend-go
-            git pull origin main
-            cd cmd/server
-            go build -o blog-server
-            sudo systemctl restart blog
+      # - name: Deploy over SSH
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ec2-user
+      #     key: ${{ secrets.EC2_SSH_KEY }}
+      #     script: |
+      #       cd ~/portfolio-backend-go
+      #       git pull origin main
+      #       cd cmd/server
+      #       go build -o blog-server
+      #       sudo systemctl restart blog
