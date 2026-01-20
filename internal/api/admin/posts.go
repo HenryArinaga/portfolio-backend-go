@@ -1,4 +1,3 @@
-// internal/api/admin/posts.go
 package admin
 
 import (
@@ -31,23 +30,13 @@ type createPostRequest struct {
 	Published bool   `json:"published"`
 }
 
-func CreatePost(db *sql.DB, adminToken string) http.HandlerFunc {
+func CreatePost(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		// only allow POST
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		// admin auth check
-		auth := r.Header.Get("Authorization")
-		if adminToken == "" || auth != "Bearer "+adminToken {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		// parse request body
 		var req createPostRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid json", http.StatusBadRequest)
@@ -59,12 +48,9 @@ func CreatePost(db *sql.DB, adminToken string) http.HandlerFunc {
 			return
 		}
 
-		// generate slug
-		slug := strings.ToLower(req.Title)
-		slug = strings.TrimSpace(slug)
+		slug := strings.ToLower(strings.TrimSpace(req.Title))
 		slug = strings.ReplaceAll(slug, " ", "-")
 
-		// insert post
 		_, err := db.Exec(`
 			INSERT INTO posts (title, slug, content, published, created_at)
 			VALUES (?, ?, ?, ?, ?)
@@ -85,24 +71,10 @@ func CreatePost(db *sql.DB, adminToken string) http.HandlerFunc {
 	}
 }
 
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-func UpdatePost(db *sql.DB, adminToken string) http.HandlerFunc {
+func UpdatePost(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Method != http.MethodPut {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		auth := r.Header.Get("Authorization")
-		if adminToken == "" || auth != "Bearer "+adminToken {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
@@ -142,17 +114,10 @@ func UpdatePost(db *sql.DB, adminToken string) http.HandlerFunc {
 	}
 }
 
-func ListPosts(db *sql.DB, adminToken string) http.HandlerFunc {
+func ListPosts(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		auth := r.Header.Get("Authorization")
-		if adminToken == "" || auth != "Bearer "+adminToken {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
@@ -188,4 +153,11 @@ func ListPosts(db *sql.DB, adminToken string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(posts)
 	}
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
