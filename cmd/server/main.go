@@ -1,9 +1,11 @@
 package main
 
 import (
+	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/henryarin/portfolio-backend-go/internal/api"
@@ -13,6 +15,7 @@ import (
 	"github.com/henryarin/portfolio-backend-go/internal/db"
 	"github.com/henryarin/portfolio-backend-go/internal/handlers"
 	"github.com/henryarin/portfolio-backend-go/internal/middleware"
+	"github.com/henryarin/portfolio-backend-go/internal/web"
 )
 
 func main() {
@@ -36,6 +39,13 @@ func main() {
 	requireAdminSession := middleware.RequireAdminSession(sessionManager)
 
 	mux := http.NewServeMux()
+
+	tmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal", "web", "templates", "layout.html"),
+		filepath.Join("internal", "web", "templates", "blog_index.html"),
+	))
+
+	mux.HandleFunc("/blog", web.BlogIndex(tmpl))
 
 	adminLimiter := middleware.NewRateLimiter(5, time.Minute)
 

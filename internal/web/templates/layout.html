@@ -1,0 +1,15 @@
+{{define "layout"}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{block "title" .}}Blog{{end}}</title>
+  </head>
+  <body>
+    <main style="max-width: 900px; margin: 3rem auto; padding: 0 1.25rem;">
+      {{template "content" .}}
+    </main>
+  </body>
+</html>
+{{end}}
