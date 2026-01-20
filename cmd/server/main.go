@@ -29,7 +29,16 @@ func main() {
 	mux.Handle(
 		"/api/admin/posts",
 		adminLimiter.Middleware(
-			admin.CreatePost(database, cfg.AdminToken),
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.Method {
+				case http.MethodGet:
+					admin.ListPosts(database, cfg.AdminToken)(w, r)
+				case http.MethodPost:
+					admin.CreatePost(database, cfg.AdminToken)(w, r)
+				default:
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
 		),
 	)
 
