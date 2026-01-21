@@ -81,6 +81,8 @@ func main() {
 
 	mux.HandleFunc("/api/posts", api.ListPosts)
 	mux.HandleFunc("/api/posts/", api.GetPostBySlug)
+	mux.HandleFunc("/api/posts/previews", api.ListPostPreviews)
+	mux.HandleFunc("/blog/", web.BlogShow(tmpl))
 
 	handler := sessionManager.LoadAndSave(
 		middleware.CORS(cfg.AllowedOrigin, mux),

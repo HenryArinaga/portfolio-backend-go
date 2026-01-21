@@ -55,6 +55,69 @@ func GetPublishedPosts() ([]Post, error) {
 	return posts, nil
 }
 
+func GetPublishedPostBySlug(slug string) (Post, error) {
+	var p Post
+	err := database.QueryRow(`
+		SELECT id, title, slug, content, created_at, published
+		FROM posts
+		WHERE slug = ? AND published = 1
+	`, slug).Scan(
+		&p.ID,
+		&p.Title,
+		&p.Slug,
+		&p.Content,
+		&p.CreatedAt,
+		&p.Published,
+	)
+
+	return p, err
+}
+
+func GetPostPreviews(limit int) ([]Post, error) {
+	rows, err := database.Query(`
+		SELECT id, title, slug, substr(content, 1, 200) || '...' AS content, created_at
+		FROM posts
+		WHERE published = 1
+		ORDER BY created_at DESC
+		LIMIT ?
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	posts := []Post{}
+
+	for rows.Next() {
+		var p Post
+		if err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.Slug,
+			&p.Content,
+			&p.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		posts = append(posts, p)
+	}
+
+	return posts, nil
+}
+
+func ListPostPreviews(w http.ResponseWriter, r *http.Request) {
+	limit := 3 // default preview count
+
+	posts, err := GetPostPreviews(limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
+}
+
 func ListPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := GetPublishedPosts()
 	if err != nil {

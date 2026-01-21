@@ -31,3 +31,33 @@ func BlogIndex(t *template.Template) http.HandlerFunc {
 		}
 	}
 }
+
+type BlogPostData struct {
+	Post api.Post
+}
+
+func BlogShow(t *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		slug := r.URL.Path[len("/blog/"):]
+		if slug == "" {
+			http.NotFound(w, r)
+			return
+		}
+
+		post, err := api.GetPublishedPostBySlug(slug)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		data := BlogPostData{
+			Post: post,
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := t.ExecuteTemplate(w, "layout", data); err != nil {
+			http.Error(w, "template render failed", http.StatusInternalServerError)
+			return
+		}
+	}
+}
