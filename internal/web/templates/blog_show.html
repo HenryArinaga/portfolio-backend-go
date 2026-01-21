@@ -1,0 +1,13 @@
+{{ define "title" }}{{ .Post.Title }}{{ end }}
+
+{{ define "content" }}
+  <h1>{{ .Post.Title }}</h1>
+
+  <article>
+    {{ .Post.Content }}
+  </article>
+
+  <p>
+    <a href="/blog">← Back to blog</a>
+  </p>
+{{ end }}

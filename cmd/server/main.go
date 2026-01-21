@@ -34,6 +34,7 @@ func main() {
 
 	adminAuth := &handlers.AdminAuthHandler{
 		Sessions: sessionManager,
+		Config:   cfg,
 	}
 
 	requireAdminSession := middleware.RequireAdminSession(sessionManager)
@@ -43,6 +44,7 @@ func main() {
 	tmpl := template.Must(template.ParseFiles(
 		filepath.Join("internal", "web", "templates", "layout.html"),
 		filepath.Join("internal", "web", "templates", "blog_index.html"),
+		filepath.Join("internal", "web", "templates", "blog_show.html"),
 	))
 
 	mux.HandleFunc("/blog", web.BlogIndex(tmpl))

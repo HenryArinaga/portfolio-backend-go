@@ -3,19 +3,19 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"os"
-
-	"github.com/henryarin/portfolio-backend-go/internal/auth"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/henryarin/portfolio-backend-go/internal/auth"
+	"github.com/henryarin/portfolio-backend-go/internal/config"
 )
 
 type AdminAuthHandler struct {
 	Sessions *scs.SessionManager
+	Config   config.Config
 }
 
 type loginReq struct {
-	Token string `json:"token"`
+	Password string `json:"password"`
 }
 
 func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -35,13 +35,12 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	adminToken := os.Getenv("ADMIN_TOKEN")
-	if adminToken == "" {
+	if h.Config.AdminPassword == "" {
 		http.Error(w, "server misconfigured", http.StatusInternalServerError)
 		return
 	}
 
-	if req.Token != adminToken {
+	if req.Password != h.Config.AdminPassword {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}

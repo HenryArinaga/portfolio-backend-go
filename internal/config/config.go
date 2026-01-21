@@ -11,6 +11,7 @@ type Config struct {
 	AllowedOrigin string
 	DBPath        string
 	AdminToken    string
+	AdminPassword string
 }
 
 func Load() Config {
@@ -21,7 +22,9 @@ func Load() Config {
 		AllowedOrigin: getEnv("ALLOWED_ORIGIN", "*"),
 		DBPath:        getEnv("DB_PATH", "blog.db"),
 		AdminToken:    getEnv("ADMIN_TOKEN", ""),
+		AdminPassword: getEnv("ADMIN_PASSWORD", ""),
 	}
+
 }
 
 func getEnv(key, fallback string) string {
