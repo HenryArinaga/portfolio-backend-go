@@ -1,18 +1,27 @@
+// internal/web/blog.go
 package web
 
 import (
 	"html/template"
 	"net/http"
+
+	"github.com/henryarin/portfolio-backend-go/internal/api"
 )
 
 type BlogIndexData struct {
-	Posts []string
+	Posts []api.Post
 }
 
 func BlogIndex(t *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		posts, err := api.GetPublishedPosts()
+		if err != nil {
+			http.Error(w, "failed to load posts", http.StatusInternalServerError)
+			return
+		}
+
 		data := BlogIndexData{
-			Posts: []string{"First SSR post", "Second SSR post"},
+			Posts: posts,
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

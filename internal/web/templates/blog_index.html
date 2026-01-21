@@ -1,12 +1,10 @@
-{{define "title"}}Blog{{end}}
+{{define "title"}}Blog{{end}} {{define "content"}}
+<h1>Blog</h1>
+<p>This is server-rendered HTML from Go.</p>
 
-{{define "content"}}
-  <h1>Blog</h1>
-  <p>This is server-rendered HTML from Go.</p>
-
-  <ul>
-    {{range .Posts}}
-      <li>{{.}}</li>
-    {{end}}
-  </ul>
+<ul>
+  {{range .Posts}}
+  <li>{{.Title}}</li>
+  {{end}}
+</ul>
 {{end}}

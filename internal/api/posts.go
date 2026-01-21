@@ -23,7 +23,7 @@ type Post struct {
 	Published bool      `json:"published"`
 }
 
-func ListPosts(w http.ResponseWriter, r *http.Request) {
+func GetPublishedPosts() ([]Post, error) {
 	rows, err := database.Query(`
 		SELECT id, title, slug, content, created_at, published
 		FROM posts
@@ -31,8 +31,7 @@ func ListPosts(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -48,10 +47,19 @@ func ListPosts(w http.ResponseWriter, r *http.Request) {
 			&p.CreatedAt,
 			&p.Published,
 		); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, err
 		}
 		posts = append(posts, p)
+	}
+
+	return posts, nil
+}
+
+func ListPosts(w http.ResponseWriter, r *http.Request) {
+	posts, err := GetPublishedPosts()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
