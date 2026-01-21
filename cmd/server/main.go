@@ -41,13 +41,18 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	tmpl := template.Must(template.ParseFiles(
+	indexTmpl := template.Must(template.ParseFiles(
 		filepath.Join("internal", "web", "templates", "layout.html"),
 		filepath.Join("internal", "web", "templates", "blog_index.html"),
+	))
+
+	showTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal", "web", "templates", "layout.html"),
 		filepath.Join("internal", "web", "templates", "blog_show.html"),
 	))
 
-	mux.HandleFunc("/blog", web.BlogIndex(tmpl))
+	mux.HandleFunc("/blog", web.BlogIndex(indexTmpl))
+	mux.HandleFunc("/blog/", web.BlogShow(showTmpl))
 
 	adminLimiter := middleware.NewRateLimiter(5, time.Minute)
 
@@ -84,7 +89,6 @@ func main() {
 	mux.HandleFunc("/api/posts", api.ListPosts)
 	mux.HandleFunc("/api/posts/", api.GetPostBySlug)
 	mux.HandleFunc("/api/posts/previews", api.ListPostPreviews)
-	mux.HandleFunc("/blog/", web.BlogShow(tmpl))
 
 	handler := sessionManager.LoadAndSave(
 		middleware.CORS(cfg.AllowedOrigin, mux),

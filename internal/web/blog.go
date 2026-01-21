@@ -26,7 +26,7 @@ func BlogIndex(t *template.Template) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := t.ExecuteTemplate(w, "layout", data); err != nil {
-			http.Error(w, "template render failed", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -56,7 +56,7 @@ func BlogShow(t *template.Template) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := t.ExecuteTemplate(w, "layout", data); err != nil {
-			http.Error(w, "template render failed", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
