@@ -51,6 +51,13 @@ func main() {
 		filepath.Join("internal", "web", "templates", "blog_show.html"),
 	))
 
+	adminLoginTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal", "web", "templates", "layout.html"),
+		filepath.Join("internal", "web", "templates", "admin_login.html"),
+	))
+
+	mux.HandleFunc("/admin/login", web.AdminLoginPage(adminLoginTmpl))
+
 	mux.HandleFunc("/blog", web.BlogIndex(indexTmpl))
 	mux.HandleFunc("/blog/", web.BlogShow(showTmpl))
 

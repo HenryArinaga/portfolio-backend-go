@@ -1,0 +1,21 @@
+{{define "title"}}Admin Login{{end}}
+
+{{define "content"}}
+<h1>Admin Login</h1>
+
+<form method="POST" action="/api/admin/login">
+  <div style="margin-bottom: 1rem;">
+    <label>
+      Password<br />
+      <input
+        type="password"
+        name="password"
+        required
+        style="padding: 0.5rem; width: 100%; max-width: 300px;"
+      />
+    </label>
+  </div>
+
+  <button type="submit">Log in</button>
+</form>
+{{end}}
