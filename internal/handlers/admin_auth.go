@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/henryarin/portfolio-backend-go/internal/auth"
@@ -20,7 +21,6 @@ type loginReq struct {
 
 func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -29,10 +29,23 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req loginReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
+	var password string
+
+	if ct := r.Header.Get("Content-Type"); strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "invalid form", http.StatusBadRequest)
+			return
+		}
+		password = r.FormValue("password")
+	} else {
+		var req struct {
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+		password = req.Password
 	}
 
 	if h.Config.AdminPassword == "" {
@@ -40,12 +53,17 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Password != h.Config.AdminPassword {
+	if password != h.Config.AdminPassword {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	h.Sessions.Put(r.Context(), auth.AdminSessionKey, true)
+
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
+		http.Redirect(w, r, "/blog", http.StatusSeeOther)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"ok": true})
