@@ -15,12 +15,9 @@ type AdminAuthHandler struct {
 	Config   config.Config
 }
 
-type loginReq struct {
-	Password string `json:"password"`
-}
-
 func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -30,8 +27,9 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var password string
+	ct := r.Header.Get("Content-Type")
 
-	if ct := r.Header.Get("Content-Type"); strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+	if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form", http.StatusBadRequest)
 			return
@@ -60,8 +58,8 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	h.Sessions.Put(r.Context(), auth.AdminSessionKey, true)
 
-	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
-		http.Redirect(w, r, "/blog", http.StatusSeeOther)
+	if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
 
@@ -74,5 +72,5 @@ func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to logout", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	http.Redirect(w, r, "/blog", http.StatusSeeOther)
 }

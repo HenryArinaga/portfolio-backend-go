@@ -56,6 +56,13 @@ func main() {
 		filepath.Join("internal", "web", "templates", "admin_login.html"),
 	))
 
+	adminTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal", "web", "templates", "layout.html"),
+		filepath.Join("internal", "web", "templates", "admin_dashboard.html"),
+	))
+
+	mux.Handle("/admin", requireAdminSession(web.AdminDashboard(adminTmpl)))
+
 	mux.HandleFunc("/admin/login", web.AdminLoginPage(adminLoginTmpl))
 
 	mux.HandleFunc("/blog", web.BlogIndex(indexTmpl))

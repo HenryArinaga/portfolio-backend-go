@@ -1,0 +1,11 @@
+{{define "title"}}Admin Dashboard{{end}}
+
+{{define "content"}}
+<h1>Admin Dashboard</h1>
+
+<p>You are logged in as admin.</p>
+
+<form method="POST" action="/api/admin/logout">
+  <button type="submit">Log out</button>
+</form>
+{{end}}
