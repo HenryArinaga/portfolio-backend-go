@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/henryarin/portfolio-backend-go/internal/api"
@@ -29,7 +30,6 @@ func main() {
 	api.SetDB(database)
 
 	isProd := os.Getenv("ENV") == "prod"
-
 	sessionManager := auth.NewSessionManager(database, isProd)
 
 	adminAuth := &handlers.AdminAuthHandler{
@@ -41,30 +41,46 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	/* ---------- Templates ---------- */
+
 	indexTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal", "web", "templates", "layout.html"),
-		filepath.Join("internal", "web", "templates", "blog_index.html"),
+		filepath.Join("internal/web/templates/layout.html"),
+		filepath.Join("internal/web/templates/blog_index.html"),
 	))
 
 	showTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal", "web", "templates", "layout.html"),
-		filepath.Join("internal", "web", "templates", "blog_show.html"),
+		filepath.Join("internal/web/templates/layout.html"),
+		filepath.Join("internal/web/templates/blog_show.html"),
 	))
 
 	adminLoginTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal", "web", "templates", "layout.html"),
-		filepath.Join("internal", "web", "templates", "admin_login.html"),
+		filepath.Join("internal/web/templates/layout.html"),
+		filepath.Join("internal/web/templates/admin_login.html"),
 	))
 
 	adminTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal", "web", "templates", "layout.html"),
-		filepath.Join("internal", "web", "templates", "admin_dashboard.html"),
+		filepath.Join("internal/web/templates/layout.html"),
+		filepath.Join("internal/web/templates/admin_dashboard.html"),
 	))
 
 	adminEditTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal", "web", "templates", "layout.html"),
-		filepath.Join("internal", "web", "templates", "admin_edit_post.html"),
+		filepath.Join("internal/web/templates/layout.html"),
+		filepath.Join("internal/web/templates/admin_edit_post.html"),
 	))
+
+	adminDeleteTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal/web/templates/layout.html"),
+		filepath.Join("internal/web/templates/admin_delete_post.html"),
+	))
+
+	/* ---------- Public Blog ---------- */
+
+	mux.HandleFunc("/blog", web.BlogIndex(indexTmpl))
+	mux.HandleFunc("/blog/", web.BlogShow(showTmpl))
+
+	/* ---------- Admin Pages (SSR) ---------- */
+
+	mux.HandleFunc("/admin/login", web.AdminLoginPage(adminLoginTmpl))
 
 	mux.Handle(
 		"/admin",
@@ -76,14 +92,20 @@ func main() {
 	mux.Handle(
 		"/admin/posts/",
 		requireAdminSession(
-			web.AdminEditPost(adminEditTmpl, database),
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.HasSuffix(r.URL.Path, "/edit"):
+					web.AdminEditPost(adminEditTmpl, database)(w, r)
+				case strings.HasSuffix(r.URL.Path, "/delete"):
+					web.AdminDeletePost(adminDeleteTmpl, database)(w, r)
+				default:
+					http.NotFound(w, r)
+				}
+			}),
 		),
 	)
 
-	mux.HandleFunc("/admin/login", web.AdminLoginPage(adminLoginTmpl))
-
-	mux.HandleFunc("/blog", web.BlogIndex(indexTmpl))
-	mux.HandleFunc("/blog/", web.BlogShow(showTmpl))
+	/* ---------- Admin API ---------- */
 
 	adminLimiter := middleware.NewRateLimiter(5, time.Minute)
 
@@ -112,14 +134,24 @@ func main() {
 		"/api/admin/posts/",
 		adminLimiter.Middleware(
 			requireAdminSession(
-				admin.UpdatePost(database),
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.HasSuffix(r.URL.Path, "/delete") {
+						admin.DeletePost(database)(w, r)
+						return
+					}
+					admin.UpdatePost(database)(w, r)
+				}),
 			),
 		),
 	)
 
+	/* ---------- Public API ---------- */
+
 	mux.HandleFunc("/api/posts", api.ListPosts)
 	mux.HandleFunc("/api/posts/", api.GetPostBySlug)
 	mux.HandleFunc("/api/posts/previews", api.ListPostPreviews)
+
+	/* ---------- Middleware ---------- */
 
 	handler := sessionManager.LoadAndSave(
 		middleware.CORS(cfg.AllowedOrigin, mux),

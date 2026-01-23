@@ -1,0 +1,16 @@
+{{define "title"}}Delete Post{{end}}
+
+{{define "content"}}
+<h1>Delete Post</h1>
+
+<p>Are you sure you want to delete this post?</p>
+
+<p>
+  <strong>{{.Post.Title}}</strong>
+</p>
+
+<form method="POST" action="/api/admin/posts/{{.Post.ID}}/delete">
+  <button type="submit" style="margin-right:1rem;">Yes, delete</button>
+  <a href="/admin">Cancel</a>
+</form>
+{{end}}

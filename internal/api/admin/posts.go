@@ -243,3 +243,30 @@ func GetPostByID(db *sql.DB, id int64) (Post, error) {
 	)
 	return p, err
 }
+
+func DeletePost(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		idStr := strings.TrimSuffix(
+			strings.TrimPrefix(r.URL.Path, "/api/admin/posts/"),
+			"/delete",
+		)
+
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			http.Error(w, "invalid post id", http.StatusBadRequest)
+			return
+		}
+
+		if _, err := db.Exec(`DELETE FROM posts WHERE id = ?`, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	}
+}
