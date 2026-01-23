@@ -61,10 +61,22 @@ func main() {
 		filepath.Join("internal", "web", "templates", "admin_dashboard.html"),
 	))
 
+	adminEditTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal", "web", "templates", "layout.html"),
+		filepath.Join("internal", "web", "templates", "admin_edit_post.html"),
+	))
+
 	mux.Handle(
 		"/admin",
 		requireAdminSession(
 			web.AdminDashboard(adminTmpl, database),
+		),
+	)
+
+	mux.Handle(
+		"/admin/posts/",
+		requireAdminSession(
+			web.AdminEditPost(adminEditTmpl, database),
 		),
 	)
 

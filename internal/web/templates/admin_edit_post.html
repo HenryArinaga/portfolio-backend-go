@@ -1,0 +1,29 @@
+{{define "title"}}Edit Post{{end}}
+
+{{define "content"}}
+<h1>Edit Post</h1>
+
+<form method="POST" action="/api/admin/posts/{{.Post.ID}}">
+  <div style="margin-bottom:.5rem;">
+    <label>Title<br>
+      <input name="title" value="{{.Post.Title}}" required style="width:100%;max-width:400px;padding:.5rem;">
+    </label>
+  </div>
+
+  <div style="margin-bottom:.5rem;">
+    <label>Content<br>
+      <textarea name="content" rows="8" required style="width:100%;max-width:600px;padding:.5rem;">{{.Post.Content}}</textarea>
+    </label>
+  </div>
+
+  <label>
+    <input type="checkbox" name="published" {{if .Post.Published}}checked{{end}}>
+    Published
+  </label>
+
+  <div style="margin-top:1rem;">
+    <button type="submit">Save</button>
+    <a href="/admin">Cancel</a>
+  </div>
+</form>
+{{end}}

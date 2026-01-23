@@ -101,40 +101,56 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 
 func UpdatePost(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
+		if r.Method != http.MethodPost && r.Method != http.MethodPut {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
 		idStr := r.URL.Path[len("/api/admin/posts/"):]
-		if idStr == "" {
-			http.NotFound(w, r)
-			return
-		}
-
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			http.Error(w, "invalid post id", http.StatusBadRequest)
 			return
 		}
 
-		var req UpdatePostRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid json", http.StatusBadRequest)
-			return
+		var title, content string
+		var published bool
+		ct := r.Header.Get("Content-Type")
+
+		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, "invalid form", http.StatusBadRequest)
+				return
+			}
+			title = r.FormValue("title")
+			content = r.FormValue("content")
+			published = r.FormValue("published") == "on"
+		} else {
+			var req UpdatePostRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid json", http.StatusBadRequest)
+				return
+			}
+			title = req.Title
+			content = req.Content
+			published = req.Published
 		}
 
-		slug := strings.ToLower(strings.TrimSpace(req.Title))
+		slug := strings.ToLower(strings.TrimSpace(title))
 		slug = strings.ReplaceAll(slug, " ", "-")
 
 		_, err = db.Exec(`
 			UPDATE posts
 			SET title = ?, slug = ?, content = ?, published = ?
 			WHERE id = ?
-		`, req.Title, slug, req.Content, boolToInt(req.Published), id)
-
+		`, title, slug, content, boolToInt(published), id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}
 
@@ -213,4 +229,17 @@ func ListPostsData(db *sql.DB) ([]Post, error) {
 		posts = append(posts, p)
 	}
 	return posts, nil
+}
+
+func GetPostByID(db *sql.DB, id int64) (Post, error) {
+	var p Post
+	err := db.QueryRow(`
+		SELECT id, title, slug, content, created_at, published
+		FROM posts
+		WHERE id = ?
+	`, id).Scan(
+		&p.ID, &p.Title, &p.Slug,
+		&p.Content, &p.CreatedAt, &p.Published,
+	)
+	return p, err
 }

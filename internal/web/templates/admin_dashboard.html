@@ -33,6 +33,7 @@
         <strong>{{.Title}}</strong>
         {{if .Published}}(published){{else}}(draft){{end}}
         — <a href="/blog/{{.Slug}}" target="_blank">view</a>
+        — <a href="/admin/posts/{{.ID}}/edit">edit</a>
       </li>
     {{else}}
       <li>No posts yet</li>
