@@ -3,9 +3,44 @@
 {{define "content"}}
 <h1>Admin Dashboard</h1>
 
-<p>You are logged in as admin.</p>
+<section style="margin-bottom:2rem;">
+  <h2>Create Post</h2>
+  <form method="POST" action="/api/admin/posts">
+    <div style="margin-bottom:0.5rem;">
+      <label>Title<br>
+        <input name="title" required style="width:100%;max-width:400px;padding:.5rem;">
+      </label>
+    </div>
+    <div style="margin-bottom:0.5rem;">
+      <label>Content<br>
+        <textarea name="content" rows="6" required style="width:100%;max-width:600px;padding:.5rem;"></textarea>
+      </label>
+    </div>
+    <label>
+      <input type="checkbox" name="published"> Published
+    </label>
+    <div style="margin-top:.75rem;">
+      <button type="submit">Create</button>
+    </div>
+  </form>
+</section>
 
-<form method="POST" action="/api/admin/logout">
+<section>
+  <h2>Posts</h2>
+  <ul>
+    {{range .Posts}}
+      <li>
+        <strong>{{.Title}}</strong>
+        {{if .Published}}(published){{else}}(draft){{end}}
+        — <a href="/blog/{{.Slug}}" target="_blank">view</a>
+      </li>
+    {{else}}
+      <li>No posts yet</li>
+    {{end}}
+  </ul>
+</section>
+
+<form method="POST" action="/api/admin/logout" style="margin-top:2rem;">
   <button type="submit">Log out</button>
 </form>
 {{end}}

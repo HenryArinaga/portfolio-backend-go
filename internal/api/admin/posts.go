@@ -37,33 +37,61 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		var req createPostRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid json", http.StatusBadRequest)
-			return
+		var title, content string
+		var published bool
+
+		ct := r.Header.Get("Content-Type")
+
+		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, "invalid form", http.StatusBadRequest)
+				return
+			}
+
+			title = r.FormValue("title")
+			content = r.FormValue("content")
+			published = r.FormValue("published") == "on"
+		} else {
+			var req struct {
+				Title     string `json:"title"`
+				Content   string `json:"content"`
+				Published bool   `json:"published"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid json", http.StatusBadRequest)
+				return
+			}
+
+			title = req.Title
+			content = req.Content
+			published = req.Published
 		}
 
-		if strings.TrimSpace(req.Title) == "" || strings.TrimSpace(req.Content) == "" {
+		if strings.TrimSpace(title) == "" || strings.TrimSpace(content) == "" {
 			http.Error(w, "title and content required", http.StatusBadRequest)
 			return
 		}
 
-		slug := strings.ToLower(strings.TrimSpace(req.Title))
+		slug := strings.ToLower(strings.TrimSpace(title))
 		slug = strings.ReplaceAll(slug, " ", "-")
 
 		_, err := db.Exec(`
 			INSERT INTO posts (title, slug, content, published, created_at)
 			VALUES (?, ?, ?, ?, ?)
 		`,
-			req.Title,
+			title,
 			slug,
-			req.Content,
-			boolToInt(req.Published),
+			content,
+			boolToInt(published),
 			time.Now(),
 		)
-
 		if err != nil {
 			http.Error(w, "failed to insert post", http.StatusInternalServerError)
+			return
+		}
+
+		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}
 
@@ -160,4 +188,29 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+func ListPostsData(db *sql.DB) ([]Post, error) {
+	rows, err := db.Query(`
+		SELECT id, title, slug, content, created_at, published
+		FROM posts
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var p Post
+		if err := rows.Scan(
+			&p.ID, &p.Title, &p.Slug,
+			&p.Content, &p.CreatedAt, &p.Published,
+		); err != nil {
+			return nil, err
+		}
+		posts = append(posts, p)
+	}
+	return posts, nil
 }

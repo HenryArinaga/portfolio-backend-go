@@ -61,7 +61,12 @@ func main() {
 		filepath.Join("internal", "web", "templates", "admin_dashboard.html"),
 	))
 
-	mux.Handle("/admin", requireAdminSession(web.AdminDashboard(adminTmpl)))
+	mux.Handle(
+		"/admin",
+		requireAdminSession(
+			web.AdminDashboard(adminTmpl, database),
+		),
+	)
 
 	mux.HandleFunc("/admin/login", web.AdminLoginPage(adminLoginTmpl))
 
