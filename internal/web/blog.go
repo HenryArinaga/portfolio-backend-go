@@ -33,7 +33,8 @@ func BlogIndex(t *template.Template) http.HandlerFunc {
 }
 
 type BlogPostData struct {
-	Post api.Post
+	Post        api.Post
+	HTMLContent template.HTML
 }
 
 func BlogShow(t *template.Template) http.HandlerFunc {
@@ -50,14 +51,20 @@ func BlogShow(t *template.Template) http.HandlerFunc {
 			return
 		}
 
+		html, err := RenderMarkdown(post.Content)
+		if err != nil {
+			http.Error(w, "failed to render markdown", http.StatusInternalServerError)
+			return
+		}
+
 		data := BlogPostData{
-			Post: post,
+			Post:        post,
+			HTMLContent: template.HTML(html), // safe after sanitization
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := t.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
 	}
 }
