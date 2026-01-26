@@ -59,7 +59,7 @@ func BlogShow(t *template.Template) http.HandlerFunc {
 
 		data := BlogPostData{
 			Post:        post,
-			HTMLContent: template.HTML(html), // safe after sanitization
+			HTMLContent: html,
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
