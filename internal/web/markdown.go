@@ -8,13 +8,25 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
-var md = goldmark.New()
+var md = goldmark.New(
+	goldmark.WithExtensions(
+		extension.GFM,
+	),
+)
 var policy = bluemonday.UGCPolicy()
 
+func normalizeWhitespace(s string) string {
+	s = strings.ReplaceAll(s, `\r\n`, "\n")
+	s = strings.ReplaceAll(s, `\n`, "\n")
+	s = strings.ReplaceAll(s, `\t`, "    ")
+	return s
+}
+
 func RenderMarkdown(src string) (template.HTML, error) {
-	src = strings.ReplaceAll(src, `\n`, "\n")
+	src = normalizeWhitespace(src)
 
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(src), &buf); err != nil {
