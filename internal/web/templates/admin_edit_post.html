@@ -1,11 +1,23 @@
 {{define "title"}}Edit Post{{end}}
 
+{{define "admin-nav"}}
+<nav class="admin-nav">
+  <div class="admin-nav-content">
+    <a href="/admin" class="admin-nav-brand">Blog Admin</a>
+    <div class="admin-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/blog" target="_blank">View Blog</a>
+      <form method="POST" action="/api/admin/logout" style="margin: 0;">
+        <button type="submit" class="admin-nav-logout">Log out</button>
+      </form>
+    </div>
+  </div>
+</nav>
+{{end}}
+
 {{define "content"}}
 <div class="container">
-  <div class="header-actions">
-    <h1>Edit Post</h1>
-    <a href="/admin" class="btn-secondary">Back to Dashboard</a>
-  </div>
+  <h1>Edit Post</h1>
 
   <form method="POST" action="/api/admin/posts/{{.Post.ID}}" enctype="multipart/form-data">
     <div class="form-group">

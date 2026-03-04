@@ -1,5 +1,20 @@
 {{define "title"}}Delete Post{{end}}
 
+{{define "admin-nav"}}
+<nav class="admin-nav">
+  <div class="admin-nav-content">
+    <a href="/admin" class="admin-nav-brand">Blog Admin</a>
+    <div class="admin-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/blog" target="_blank">View Blog</a>
+      <form method="POST" action="/api/admin/logout" style="margin: 0;">
+        <button type="submit" class="admin-nav-logout">Log out</button>
+      </form>
+    </div>
+  </div>
+</nav>
+{{end}}
+
 {{define "content"}}
 <div class="container" style="max-width: 600px; margin: 4rem auto;">
   <h1 style="text-align: center; color: #dc3545;">Delete Post</h1>
