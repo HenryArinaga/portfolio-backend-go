@@ -1,10 +1,60 @@
-{{define "title"}}Blog{{end}} {{define "content"}}
-<h1>Blog</h1>
-<p>This is server-rendered HTML from Go.</p>
+{{define "title"}}Blog{{end}}
 
-<ul>
-  {{range .Posts}}
-  <li>{{.Title}}</li>
+{{define "blog-nav"}}
+{{if .IsAdmin}}
+<nav class="admin-nav">
+  <div class="admin-nav-content">
+    <a href="/admin" class="admin-nav-brand">Blog Admin</a>
+    <div class="admin-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/blog">Blog</a>
+      <form method="POST" action="/api/admin/logout" style="margin: 0;">
+        <button type="submit" class="admin-nav-logout">Log out</button>
+      </form>
+    </div>
+  </div>
+</nav>
+{{end}}
+{{end}}
+
+{{define "content"}}
+<div class="blog-container">
+  <header class="blog-header">
+    <h1 class="blog-title">Blog</h1>
+    <p class="blog-subtitle">Thoughts, tutorials, and insights</p>
+  </header>
+
+  {{if .Posts}}
+    <div class="blog-grid">
+      {{range .Posts}}
+        <article class="blog-card">
+          {{if .ImageURL}}
+            <div class="blog-card-image">
+              <img src="{{.ImageURL}}" alt="{{.Title}}" loading="lazy">
+            </div>
+          {{end}}
+          <div class="blog-card-content">
+            <time class="blog-card-date">{{.CreatedAt.Format "January 2, 2006"}}</time>
+            <h2 class="blog-card-title">
+              <a href="/blog/{{.Slug}}">{{.Title}}</a>
+            </h2>
+            {{if .Excerpt}}
+              <p class="blog-card-excerpt">{{.Excerpt}}</p>
+            {{end}}
+            <a href="/blog/{{.Slug}}" class="blog-card-link">
+              Read more
+              <svg class="blog-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+          </div>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <div class="blog-empty">
+      <p>No posts yet. Check back soon!</p>
+    </div>
   {{end}}
-</ul>
+</div>
 {{end}}

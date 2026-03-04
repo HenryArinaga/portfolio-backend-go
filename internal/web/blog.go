@@ -5,14 +5,17 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/henryarin/portfolio-backend-go/internal/api"
+	"github.com/henryarin/portfolio-backend-go/internal/auth"
 )
 
 type BlogIndexData struct {
-	Posts []api.Post
+	Posts   []api.Post
+	IsAdmin bool
 }
 
-func BlogIndex(t *template.Template) http.HandlerFunc {
+func BlogIndex(t *template.Template, sm *scs.SessionManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		posts, err := api.GetPublishedPosts()
 		if err != nil {
@@ -20,8 +23,11 @@ func BlogIndex(t *template.Template) http.HandlerFunc {
 			return
 		}
 
+		isAdmin := sm.GetBool(r.Context(), auth.AdminSessionKey)
+
 		data := BlogIndexData{
-			Posts: posts,
+			Posts:   posts,
+			IsAdmin: isAdmin,
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -35,9 +41,10 @@ func BlogIndex(t *template.Template) http.HandlerFunc {
 type BlogPostData struct {
 	Post        api.Post
 	HTMLContent template.HTML
+	IsAdmin     bool
 }
 
-func BlogShow(t *template.Template) http.HandlerFunc {
+func BlogShow(t *template.Template, sm *scs.SessionManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		slug := r.URL.Path[len("/blog/"):]
 		if slug == "" {
@@ -57,9 +64,12 @@ func BlogShow(t *template.Template) http.HandlerFunc {
 			return
 		}
 
+		isAdmin := sm.GetBool(r.Context(), auth.AdminSessionKey)
+
 		data := BlogPostData{
 			Post:        post,
 			HTMLContent: html,
+			IsAdmin:     isAdmin,
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

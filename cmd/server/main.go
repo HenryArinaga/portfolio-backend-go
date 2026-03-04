@@ -43,13 +43,13 @@ func main() {
 
 	/* ---------- Templates ---------- */
 
-	indexTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal/web/templates/layout.html"),
+	blogIndexTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal/web/templates/blog_layout.html"),
 		filepath.Join("internal/web/templates/blog_index.html"),
 	))
 
-	showTmpl := template.Must(template.ParseFiles(
-		filepath.Join("internal/web/templates/layout.html"),
+	blogShowTmpl := template.Must(template.ParseFiles(
+		filepath.Join("internal/web/templates/blog_layout.html"),
 		filepath.Join("internal/web/templates/blog_show.html"),
 	))
 
@@ -75,8 +75,8 @@ func main() {
 
 	/* ---------- Public Blog ---------- */
 
-	mux.HandleFunc("/blog", web.BlogIndex(indexTmpl))
-	mux.HandleFunc("/blog/", web.BlogShow(showTmpl))
+	mux.HandleFunc("/blog", web.BlogIndex(blogIndexTmpl, sessionManager))
+	mux.HandleFunc("/blog/", web.BlogShow(blogShowTmpl, sessionManager))
 
 	/* ---------- Admin Pages (SSR) ---------- */
 

@@ -1,9 +1,57 @@
-{{ define "title" }}{{ .Post.Title }}{{ end }} {{ define "content" }}
-<h1>{{ .Post.Title }}</h1>
+{{define "title"}}{{.Post.Title}}{{end}}
 
-<article>{{.HTMLContent}}</article>
+{{define "blog-nav"}}
+{{if .IsAdmin}}
+<nav class="admin-nav">
+  <div class="admin-nav-content">
+    <a href="/admin" class="admin-nav-brand">Blog Admin</a>
+    <div class="admin-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/blog">Blog</a>
+      <form method="POST" action="/api/admin/logout" style="margin: 0;">
+        <button type="submit" class="admin-nav-logout">Log out</button>
+      </form>
+    </div>
+  </div>
+</nav>
+{{end}}
+{{end}}
 
-<p>
-  <a href="/blog">← Back to blog</a>
-</p>
-{{ end }}
+{{define "content"}}
+<div class="blog-post-container">
+  <nav class="blog-post-back">
+    <a href="/blog">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M12 16L6 10L12 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back to Blog
+    </a>
+  </nav>
+
+  <article class="blog-post">
+    <header class="blog-post-header">
+      <time class="blog-post-date">{{.Post.CreatedAt.Format "January 2, 2006"}}</time>
+      <h1 class="blog-post-title">{{.Post.Title}}</h1>
+      {{if .Post.Excerpt}}
+        <p class="blog-post-excerpt">{{.Post.Excerpt}}</p>
+      {{end}}
+    </header>
+
+    {{if .Post.ImageURL}}
+      <div class="blog-post-featured-image">
+        <img src="{{.Post.ImageURL}}" alt="{{.Post.Title}}">
+      </div>
+    {{end}}
+
+    <div class="blog-post-content">
+      {{.HTMLContent}}
+    </div>
+
+    {{if .IsAdmin}}
+      <div class="blog-post-admin-actions">
+        <a href="/admin/posts/{{.Post.ID}}/edit" class="btn-admin-edit">Edit Post</a>
+      </div>
+    {{end}}
+  </article>
+</div>
+{{end}}
