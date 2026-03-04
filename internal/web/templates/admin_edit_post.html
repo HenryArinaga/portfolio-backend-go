@@ -1,29 +1,75 @@
 {{define "title"}}Edit Post{{end}}
 
 {{define "content"}}
-<h1>Edit Post</h1>
-
-<form method="POST" action="/api/admin/posts/{{.Post.ID}}">
-  <div style="margin-bottom:.5rem;">
-    <label>Title<br>
-      <input name="title" value="{{.Post.Title}}" required style="width:100%;max-width:400px;padding:.5rem;">
-    </label>
+<div class="container">
+  <div class="header-actions">
+    <h1>Edit Post</h1>
+    <a href="/admin" class="btn-secondary">Back to Dashboard</a>
   </div>
 
-  <div style="margin-bottom:.5rem;">
-    <label>Content<br>
-      <textarea name="content" rows="8" required style="width:100%;max-width:600px;padding:.5rem;">{{.Post.Content}}</textarea>
-    </label>
-  </div>
+  <form method="POST" action="/api/admin/posts/{{.Post.ID}}" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" value="{{.Post.Title}}" required>
+    </div>
 
-  <label>
-    <input type="checkbox" name="published" {{if .Post.Published}}checked{{end}}>
-    Published
-  </label>
+    <div class="form-group">
+      <label for="excerpt">Excerpt (optional)</label>
+      <textarea id="excerpt" name="excerpt" rows="2" placeholder="Short description for preview cards">{{.Post.Excerpt}}</textarea>
+    </div>
 
-  <div style="margin-top:1rem;">
-    <button type="submit">Save</button>
-    <a href="/admin">Cancel</a>
-  </div>
-</form>
+    <div class="form-group">
+      <label for="content">Content (Markdown)</label>
+      <textarea id="content" name="content" rows="15" required>{{.Post.Content}}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="image">Featured Image</label>
+      {{if .Post.ImageURL}}
+        <div class="image-preview" style="display: block; margin-bottom: 1rem;">
+          <img src="{{.Post.ImageURL}}" alt="Current image">
+          <p style="font-size: 0.875rem; color: #666; margin-top: 0.5rem;">Current image (upload new to replace)</p>
+        </div>
+      {{end}}
+      <div class="file-input-wrapper">
+        <input type="file" id="image" name="image" accept="image/*" onchange="previewImage(event, 'editPreview')">
+        <div class="file-input-label">
+          {{if .Post.ImageURL}}Upload new image{{else}}Click to upload image{{end}} (JPG, PNG, GIF, WEBP - Max 10MB)
+        </div>
+      </div>
+      <div id="editPreview" class="image-preview" style="display: none;">
+        <img src="" alt="Preview">
+        <p style="font-size: 0.875rem; color: #666; margin-top: 0.5rem;">New image preview</p>
+      </div>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="published" name="published" {{if .Post.Published}}checked{{end}}>
+      <label for="published">Published</label>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+      <button type="submit">Save Changes</button>
+      <a href="/admin" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function previewImage(event, previewId) {
+    const file = event.target.files[0];
+    const preview = document.getElementById(previewId);
+    
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.querySelector('img').src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+</script>
 {{end}}

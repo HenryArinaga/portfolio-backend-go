@@ -17,3 +17,5 @@ blog.db
 uploads/
 
 server
+
+.vscode/

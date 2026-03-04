@@ -5,9 +5,318 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{{block "title" .}}Blog{{end}}</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f5f5f5;
+      }
+      
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+      }
+      
+      .container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 2rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        color: #1a1a1a;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+        margin: 2rem 0 1rem;
+        color: #2a2a2a;
+      }
+      
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #444;
+      }
+      
+      input[type="text"],
+      input[type="password"],
+      textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+      }
+      
+      input[type="text"]:focus,
+      input[type="password"]:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+      }
+      
+      textarea {
+        resize: vertical;
+        font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        font-size: 0.9rem;
+      }
+      
+      button, .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+      }
+      
+      button[type="submit"], .btn-primary {
+        background: #4a90e2;
+        color: white;
+      }
+      
+      button[type="submit"]:hover, .btn-primary:hover {
+        background: #357abd;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+      }
+      
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+      
+      .btn-secondary:hover {
+        background: #5a6268;
+      }
+      
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+      
+      .btn-danger:hover {
+        background: #c82333;
+      }
+      
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+      
+      .checkbox-group input[type="checkbox"] {
+        width: auto;
+        cursor: pointer;
+      }
+      
+      .checkbox-group label {
+        margin: 0;
+        font-weight: normal;
+        cursor: pointer;
+      }
+      
+      .post-list {
+        list-style: none;
+      }
+      
+      .post-item {
+        padding: 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        margin-bottom: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+      }
+      
+      .post-item:hover {
+        background: #f9f9f9;
+      }
+      
+      .post-info {
+        flex: 1;
+      }
+      
+      .post-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #1a1a1a;
+      }
+      
+      .post-meta {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.25rem;
+      }
+      
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      
+      .badge-success {
+        background: #d4edda;
+        color: #155724;
+      }
+      
+      .badge-warning {
+        background: #fff3cd;
+        color: #856404;
+      }
+      
+      .post-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+      
+      .post-actions a {
+        padding: 0.5rem 1rem;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+      }
+      
+      .action-view {
+        color: #4a90e2;
+        border: 1px solid #4a90e2;
+      }
+      
+      .action-view:hover {
+        background: #4a90e2;
+        color: white;
+      }
+      
+      .action-edit {
+        color: #28a745;
+        border: 1px solid #28a745;
+      }
+      
+      .action-edit:hover {
+        background: #28a745;
+        color: white;
+      }
+      
+      .action-delete {
+        color: #dc3545;
+        border: 1px solid #dc3545;
+      }
+      
+      .action-delete:hover {
+        background: #dc3545;
+        color: white;
+      }
+      
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+      
+      .file-input-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+      }
+      
+      .file-input-wrapper input[type="file"] {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+      
+      .file-input-label {
+        display: block;
+        padding: 0.75rem;
+        border: 2px dashed #ddd;
+        border-radius: 4px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .file-input-label:hover {
+        border-color: #4a90e2;
+        background: #f8f9fa;
+      }
+      
+      .image-preview {
+        margin-top: 1rem;
+        max-width: 300px;
+      }
+      
+      .image-preview img {
+        max-width: 100%;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+      
+      .alert {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+      
+      .alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      
+      @media (max-width: 768px) {
+        .post-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .post-actions {
+          margin-top: 0.75rem;
+          width: 100%;
+        }
+        
+        .post-actions a {
+          flex: 1;
+          text-align: center;
+        }
+      }
+    </style>
+    {{block "extra-head" .}}{{end}}
   </head>
   <body>
-    <main style="max-width: 900px; margin: 3rem auto; padding: 0 1.25rem;">
+    <main>
       {{template "content" .}}
     </main>
   </body>

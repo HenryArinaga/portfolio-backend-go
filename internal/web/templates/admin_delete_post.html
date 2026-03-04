@@ -1,16 +1,24 @@
 {{define "title"}}Delete Post{{end}}
 
 {{define "content"}}
-<h1>Delete Post</h1>
+<div class="container" style="max-width: 600px; margin: 4rem auto;">
+  <h1 style="text-align: center; color: #dc3545;">Delete Post</h1>
+  
+  <div class="alert alert-info" style="background: #fff3cd; color: #856404; border-color: #ffeaa7; margin: 2rem 0;">
+    <strong>Are you sure?</strong> This action cannot be undone.
+  </div>
 
-<p>Are you sure you want to delete this post?</p>
+  <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
+    <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">{{.Post.Title}}</div>
+    <div style="color: #666; font-size: 0.875rem;">
+      Created: {{.Post.CreatedAt.Format "Jan 2, 2006"}}
+      {{if .Post.ImageURL}}• Has featured image{{end}}
+    </div>
+  </div>
 
-<p>
-  <strong>{{.Post.Title}}</strong>
-</p>
-
-<form method="POST" action="/api/admin/posts/{{.Post.ID}}/delete">
-  <button type="submit" style="margin-right:1rem;">Yes, delete</button>
-  <a href="/admin">Cancel</a>
-</form>
+  <form method="POST" action="/api/admin/posts/{{.Post.ID}}/delete" style="display: flex; gap: 1rem; justify-content: center;">
+    <button type="submit" class="btn-danger">Yes, Delete Post</button>
+    <a href="/admin" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
 {{end}}
