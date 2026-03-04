@@ -11,8 +11,9 @@
 
 # database
 blog.db
-
-
 *.db
+
+# uploads
+uploads/
 
 server

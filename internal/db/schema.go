@@ -10,6 +10,8 @@ func Init(db *sql.DB) error {
 		title TEXT NOT NULL,
 		slug TEXT NOT NULL UNIQUE,
 		content TEXT NOT NULL,
+		excerpt TEXT,
+		image_url TEXT,
 		published INTEGER NOT NULL DEFAULT 0,
 		created_at DATETIME NOT NULL
 	);

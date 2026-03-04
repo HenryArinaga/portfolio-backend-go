@@ -112,6 +112,16 @@ func main() {
 	mux.HandleFunc("/api/admin/login", adminAuth.Login)
 	mux.HandleFunc("/api/admin/logout", adminAuth.Logout)
 
+	// Image upload endpoint
+	mux.Handle(
+		"/api/admin/upload",
+		adminLimiter.Middleware(
+			requireAdminSession(
+				http.HandlerFunc(admin.UploadImage),
+			),
+		),
+	)
+
 	mux.Handle(
 		"/api/admin/posts",
 		adminLimiter.Middleware(
@@ -150,6 +160,12 @@ func main() {
 	mux.HandleFunc("/api/posts", api.ListPosts)
 	mux.HandleFunc("/api/posts/", api.GetPostBySlug)
 	mux.HandleFunc("/api/posts/previews", api.ListPostPreviews)
+
+	/* ---------- Static Files ---------- */
+
+	// Serve uploaded images
+	fs := http.FileServer(http.Dir("."))
+	mux.Handle("/uploads/", fs)
 
 	/* ---------- Middleware ---------- */
 

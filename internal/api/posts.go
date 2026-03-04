@@ -19,13 +19,15 @@ type Post struct {
 	Title     string    `json:"title"`
 	Slug      string    `json:"slug"`
 	Content   string    `json:"content"`
+	Excerpt   string    `json:"excerpt"`
+	ImageURL  string    `json:"image_url"`
 	CreatedAt time.Time `json:"created_at"`
 	Published bool      `json:"published"`
 }
 
 func GetPublishedPosts() ([]Post, error) {
 	rows, err := database.Query(`
-		SELECT id, title, slug, content, created_at, published
+		SELECT id, title, slug, content, excerpt, image_url, created_at, published
 		FROM posts
 		WHERE published = 1
 		ORDER BY created_at DESC
@@ -39,16 +41,21 @@ func GetPublishedPosts() ([]Post, error) {
 
 	for rows.Next() {
 		var p Post
+		var excerpt, imageURL sql.NullString
 		if err := rows.Scan(
 			&p.ID,
 			&p.Title,
 			&p.Slug,
 			&p.Content,
+			&excerpt,
+			&imageURL,
 			&p.CreatedAt,
 			&p.Published,
 		); err != nil {
 			return nil, err
 		}
+		p.Excerpt = excerpt.String
+		p.ImageURL = imageURL.String
 		posts = append(posts, p)
 	}
 
@@ -57,8 +64,9 @@ func GetPublishedPosts() ([]Post, error) {
 
 func GetPublishedPostBySlug(slug string) (Post, error) {
 	var p Post
+	var excerpt, imageURL sql.NullString
 	err := database.QueryRow(`
-		SELECT id, title, slug, content, created_at, published
+		SELECT id, title, slug, content, excerpt, image_url, created_at, published
 		FROM posts
 		WHERE slug = ? AND published = 1
 	`, slug).Scan(
@@ -66,16 +74,22 @@ func GetPublishedPostBySlug(slug string) (Post, error) {
 		&p.Title,
 		&p.Slug,
 		&p.Content,
+		&excerpt,
+		&imageURL,
 		&p.CreatedAt,
 		&p.Published,
 	)
+	p.Excerpt = excerpt.String
+	p.ImageURL = imageURL.String
 
 	return p, err
 }
 
 func GetPostPreviews(limit int) ([]Post, error) {
 	rows, err := database.Query(`
-		SELECT id, title, slug, substr(content, 1, 200) || '...' AS content, created_at
+		SELECT id, title, slug, 
+			COALESCE(excerpt, substr(content, 1, 200) || '...') AS excerpt,
+			image_url, created_at
 		FROM posts
 		WHERE published = 1
 		ORDER BY created_at DESC
@@ -90,15 +104,18 @@ func GetPostPreviews(limit int) ([]Post, error) {
 
 	for rows.Next() {
 		var p Post
+		var imageURL sql.NullString
 		if err := rows.Scan(
 			&p.ID,
 			&p.Title,
 			&p.Slug,
-			&p.Content,
+			&p.Excerpt,
+			&imageURL,
 			&p.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
+		p.ImageURL = imageURL.String
 		posts = append(posts, p)
 	}
 
@@ -137,8 +154,9 @@ func GetPostBySlug(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var p Post
+	var excerpt, imageURL sql.NullString
 	err := database.QueryRow(`
-		SELECT id, title, slug, content, created_at, published
+		SELECT id, title, slug, content, excerpt, image_url, created_at, published
 		FROM posts
 		WHERE slug = ? AND published = 1
 	`, slug).Scan(
@@ -146,9 +164,13 @@ func GetPostBySlug(w http.ResponseWriter, r *http.Request) {
 		&p.Title,
 		&p.Slug,
 		&p.Content,
+		&excerpt,
+		&imageURL,
 		&p.CreatedAt,
 		&p.Published,
 	)
+	p.Excerpt = excerpt.String
+	p.ImageURL = imageURL.String
 
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)

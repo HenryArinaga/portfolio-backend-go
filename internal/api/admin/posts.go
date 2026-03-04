@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/henryarin/portfolio-backend-go/internal/storage"
 )
 
 type Post struct {
@@ -14,6 +16,8 @@ type Post struct {
 	Title     string    `json:"title"`
 	Slug      string    `json:"slug"`
 	Content   string    `json:"content"`
+	Excerpt   string    `json:"excerpt"`
+	ImageURL  string    `json:"image_url"`
 	CreatedAt time.Time `json:"created_at"`
 	Published bool      `json:"published"`
 }
@@ -21,12 +25,16 @@ type Post struct {
 type UpdatePostRequest struct {
 	Title     string `json:"title"`
 	Content   string `json:"content"`
+	Excerpt   string `json:"excerpt"`
+	ImageURL  string `json:"image_url"`
 	Published bool   `json:"published"`
 }
 
 type createPostRequest struct {
 	Title     string `json:"title"`
 	Content   string `json:"content"`
+	Excerpt   string `json:"excerpt"`
+	ImageURL  string `json:"image_url"`
 	Published bool   `json:"published"`
 }
 
@@ -37,12 +45,34 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		var title, content string
+		var title, content, excerpt, imageURL string
 		var published bool
 
 		ct := r.Header.Get("Content-Type")
 
-		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		// Handle multipart form data (for image uploads)
+		if strings.HasPrefix(ct, "multipart/form-data") {
+			if err := r.ParseMultipartForm(10 << 20); err != nil { // 10 MB max
+				http.Error(w, "invalid form", http.StatusBadRequest)
+				return
+			}
+
+			title = r.FormValue("title")
+			content = r.FormValue("content")
+			excerpt = r.FormValue("excerpt")
+			published = r.FormValue("published") == "on" || r.FormValue("published") == "true"
+
+			// Handle image upload
+			file, header, err := r.FormFile("image")
+			if err == nil {
+				defer file.Close()
+				imageURL, err = storage.SaveImage(file, header)
+				if err != nil {
+					http.Error(w, "failed to save image: "+err.Error(), http.StatusBadRequest)
+					return
+				}
+			}
+		} else if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, "invalid form", http.StatusBadRequest)
 				return
@@ -50,11 +80,14 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 
 			title = r.FormValue("title")
 			content = r.FormValue("content")
+			excerpt = r.FormValue("excerpt")
 			published = r.FormValue("published") == "on"
 		} else {
 			var req struct {
 				Title     string `json:"title"`
 				Content   string `json:"content"`
+				Excerpt   string `json:"excerpt"`
+				ImageURL  string `json:"image_url"`
 				Published bool   `json:"published"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -64,6 +97,8 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 
 			title = req.Title
 			content = req.Content
+			excerpt = req.Excerpt
+			imageURL = req.ImageURL
 			published = req.Published
 		}
 
@@ -75,13 +110,15 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 		slug := strings.ToLower(strings.TrimSpace(title))
 		slug = strings.ReplaceAll(slug, " ", "-")
 
-		_, err := db.Exec(`
-			INSERT INTO posts (title, slug, content, published, created_at)
-			VALUES (?, ?, ?, ?, ?)
+		result, err := db.Exec(`
+			INSERT INTO posts (title, slug, content, excerpt, image_url, published, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`,
 			title,
 			slug,
 			content,
+			nullString(excerpt),
+			nullString(imageURL),
 			boolToInt(published),
 			time.Now(),
 		)
@@ -90,12 +127,15 @@ func CreatePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") || strings.HasPrefix(ct, "multipart/form-data") {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}
 
+		postID, _ := result.LastInsertId()
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]int64{"id": postID})
 	}
 }
 
@@ -113,18 +153,57 @@ func UpdatePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		var title, content string
+		// Get existing post to check for old image
+		var oldImageURL sql.NullString
+		err = db.QueryRow("SELECT image_url FROM posts WHERE id = ?", id).Scan(&oldImageURL)
+		if err != nil {
+			http.Error(w, "post not found", http.StatusNotFound)
+			return
+		}
+
+		var title, content, excerpt, imageURL string
 		var published bool
 		ct := r.Header.Get("Content-Type")
 
-		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		// Handle multipart form data (for image uploads)
+		if strings.HasPrefix(ct, "multipart/form-data") {
+			if err := r.ParseMultipartForm(10 << 20); err != nil {
+				http.Error(w, "invalid form", http.StatusBadRequest)
+				return
+			}
+
+			title = r.FormValue("title")
+			content = r.FormValue("content")
+			excerpt = r.FormValue("excerpt")
+			published = r.FormValue("published") == "on" || r.FormValue("published") == "true"
+
+			// Handle image upload
+			file, header, err := r.FormFile("image")
+			if err == nil {
+				defer file.Close()
+				imageURL, err = storage.SaveImage(file, header)
+				if err != nil {
+					http.Error(w, "failed to save image: "+err.Error(), http.StatusBadRequest)
+					return
+				}
+				// Delete old image if new one uploaded
+				if oldImageURL.Valid && oldImageURL.String != "" {
+					storage.DeleteImage(oldImageURL.String)
+				}
+			} else {
+				// Keep existing image if no new upload
+				imageURL = oldImageURL.String
+			}
+		} else if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, "invalid form", http.StatusBadRequest)
 				return
 			}
 			title = r.FormValue("title")
 			content = r.FormValue("content")
+			excerpt = r.FormValue("excerpt")
 			published = r.FormValue("published") == "on"
+			imageURL = oldImageURL.String
 		} else {
 			var req UpdatePostRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -133,6 +212,8 @@ func UpdatePost(db *sql.DB) http.HandlerFunc {
 			}
 			title = req.Title
 			content = req.Content
+			excerpt = req.Excerpt
+			imageURL = req.ImageURL
 			published = req.Published
 		}
 
@@ -141,15 +222,15 @@ func UpdatePost(db *sql.DB) http.HandlerFunc {
 
 		_, err = db.Exec(`
 			UPDATE posts
-			SET title = ?, slug = ?, content = ?, published = ?
+			SET title = ?, slug = ?, content = ?, excerpt = ?, image_url = ?, published = ?
 			WHERE id = ?
-		`, title, slug, content, boolToInt(published), id)
+		`, title, slug, content, nullString(excerpt), nullString(imageURL), boolToInt(published), id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		if strings.HasPrefix(ct, "application/x-www-form-urlencoded") || strings.HasPrefix(ct, "multipart/form-data") {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}
@@ -166,7 +247,7 @@ func ListPosts(db *sql.DB) http.HandlerFunc {
 		}
 
 		rows, err := db.Query(`
-			SELECT id, title, slug, content, created_at, published
+			SELECT id, title, slug, content, excerpt, image_url, created_at, published
 			FROM posts
 			ORDER BY created_at DESC
 		`)
@@ -180,17 +261,22 @@ func ListPosts(db *sql.DB) http.HandlerFunc {
 
 		for rows.Next() {
 			var p Post
+			var excerpt, imageURL sql.NullString
 			if err := rows.Scan(
 				&p.ID,
 				&p.Title,
 				&p.Slug,
 				&p.Content,
+				&excerpt,
+				&imageURL,
 				&p.CreatedAt,
 				&p.Published,
 			); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			p.Excerpt = excerpt.String
+			p.ImageURL = imageURL.String
 			posts = append(posts, p)
 		}
 
@@ -208,7 +294,7 @@ func boolToInt(b bool) int {
 
 func ListPostsData(db *sql.DB) ([]Post, error) {
 	rows, err := db.Query(`
-		SELECT id, title, slug, content, created_at, published
+		SELECT id, title, slug, content, excerpt, image_url, created_at, published
 		FROM posts
 		ORDER BY created_at DESC
 	`)
@@ -220,12 +306,15 @@ func ListPostsData(db *sql.DB) ([]Post, error) {
 	var posts []Post
 	for rows.Next() {
 		var p Post
+		var excerpt, imageURL sql.NullString
 		if err := rows.Scan(
 			&p.ID, &p.Title, &p.Slug,
-			&p.Content, &p.CreatedAt, &p.Published,
+			&p.Content, &excerpt, &imageURL, &p.CreatedAt, &p.Published,
 		); err != nil {
 			return nil, err
 		}
+		p.Excerpt = excerpt.String
+		p.ImageURL = imageURL.String
 		posts = append(posts, p)
 	}
 	return posts, nil
@@ -233,14 +322,17 @@ func ListPostsData(db *sql.DB) ([]Post, error) {
 
 func GetPostByID(db *sql.DB, id int64) (Post, error) {
 	var p Post
+	var excerpt, imageURL sql.NullString
 	err := db.QueryRow(`
-		SELECT id, title, slug, content, created_at, published
+		SELECT id, title, slug, content, excerpt, image_url, created_at, published
 		FROM posts
 		WHERE id = ?
 	`, id).Scan(
 		&p.ID, &p.Title, &p.Slug,
-		&p.Content, &p.CreatedAt, &p.Published,
+		&p.Content, &excerpt, &imageURL, &p.CreatedAt, &p.Published,
 	)
+	p.Excerpt = excerpt.String
+	p.ImageURL = imageURL.String
 	return p, err
 }
 
@@ -262,11 +354,27 @@ func DeletePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// Get image URL before deleting
+		var imageURL sql.NullString
+		db.QueryRow("SELECT image_url FROM posts WHERE id = ?", id).Scan(&imageURL)
+
 		if _, err := db.Exec(`DELETE FROM posts WHERE id = ?`, id); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Delete associated image
+		if imageURL.Valid && imageURL.String != "" {
+			storage.DeleteImage(imageURL.String)
+		}
+
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 	}
+}
+
+func nullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{Valid: false}
+	}
+	return sql.NullString{String: s, Valid: true}
 }
