@@ -107,51 +107,48 @@ func main() {
 
 	/* ---------- Admin API ---------- */
 
-	adminLimiter := middleware.NewRateLimiter(5, time.Minute)
+	loginLimiter := middleware.NewRateLimiter(5, time.Minute)
 
-	mux.HandleFunc("/api/admin/login", adminAuth.Login)
+	mux.Handle(
+		"/api/admin/login",
+		loginLimiter.Middleware(http.HandlerFunc(adminAuth.Login)),
+	)
 	mux.HandleFunc("/api/admin/logout", adminAuth.Logout)
 
 	// Image upload endpoint
 	mux.Handle(
 		"/api/admin/upload",
-		adminLimiter.Middleware(
-			requireAdminSession(
-				http.HandlerFunc(admin.UploadImage),
-			),
+		requireAdminSession(
+			http.HandlerFunc(admin.UploadImage),
 		),
 	)
 
 	mux.Handle(
 		"/api/admin/posts",
-		adminLimiter.Middleware(
-			requireAdminSession(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					switch r.Method {
-					case http.MethodGet:
-						admin.ListPosts(database)(w, r)
-					case http.MethodPost:
-						admin.CreatePost(database)(w, r)
-					default:
-						http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-					}
-				}),
-			),
+		requireAdminSession(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.Method {
+				case http.MethodGet:
+					admin.ListPosts(database)(w, r)
+				case http.MethodPost:
+					admin.CreatePost(database)(w, r)
+				default:
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
 		),
 	)
 
 	mux.Handle(
 		"/api/admin/posts/",
-		adminLimiter.Middleware(
-			requireAdminSession(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if strings.HasSuffix(r.URL.Path, "/delete") {
-						admin.DeletePost(database)(w, r)
-						return
-					}
-					admin.UpdatePost(database)(w, r)
-				}),
-			),
+		requireAdminSession(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasSuffix(r.URL.Path, "/delete") {
+					admin.DeletePost(database)(w, r)
+					return
+				}
+				admin.UpdatePost(database)(w, r)
+			}),
 		),
 	)
 
