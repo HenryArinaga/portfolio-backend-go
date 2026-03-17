@@ -52,7 +52,15 @@ func BlogShow(t *template.Template, sm *scs.SessionManager) http.HandlerFunc {
 			return
 		}
 
-		post, err := api.GetPublishedPostBySlug(slug)
+		isAdmin := sm.GetBool(r.Context(), auth.AdminSessionKey)
+
+		var post api.Post
+		var err error
+		if isAdmin {
+			post, err = api.GetAnyPostBySlug(slug)
+		} else {
+			post, err = api.GetPublishedPostBySlug(slug)
+		}
 		if err != nil {
 			http.NotFound(w, r)
 			return
@@ -63,8 +71,6 @@ func BlogShow(t *template.Template, sm *scs.SessionManager) http.HandlerFunc {
 			http.Error(w, "failed to render markdown", http.StatusInternalServerError)
 			return
 		}
-
-		isAdmin := sm.GetBool(r.Context(), auth.AdminSessionKey)
 
 		data := BlogPostData{
 			Post:        post,

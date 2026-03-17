@@ -85,6 +85,29 @@ func GetPublishedPostBySlug(slug string) (Post, error) {
 	return p, err
 }
 
+func GetAnyPostBySlug(slug string) (Post, error) {
+	var p Post
+	var excerpt, imageURL sql.NullString
+	err := database.QueryRow(`
+		SELECT id, title, slug, content, excerpt, image_url, created_at, published
+		FROM posts
+		WHERE slug = ?
+	`, slug).Scan(
+		&p.ID,
+		&p.Title,
+		&p.Slug,
+		&p.Content,
+		&excerpt,
+		&imageURL,
+		&p.CreatedAt,
+		&p.Published,
+	)
+	p.Excerpt = excerpt.String
+	p.ImageURL = imageURL.String
+
+	return p, err
+}
+
 func GetPostPreviews(limit int) ([]Post, error) {
 	rows, err := database.Query(`
 		SELECT id, title, slug, 

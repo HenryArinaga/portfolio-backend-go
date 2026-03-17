@@ -38,6 +38,15 @@
   <article class="blog-post">
     <header class="blog-post-header">
       <time class="blog-post-date">{{.Post.CreatedAt.Format "January 2, 2006"}}</time>
+      {{if .IsAdmin}}
+        <div style="margin-top: 0.75rem;">
+          {{if .Post.Published}}
+            <span style="display: inline-block; padding: 0.35rem 0.7rem; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 0.85rem; font-weight: 600;">Published</span>
+          {{else}}
+            <span style="display: inline-block; padding: 0.35rem 0.7rem; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.85rem; font-weight: 600;">Draft Preview</span>
+          {{end}}
+        </div>
+      {{end}}
       <h1 class="blog-post-title">{{.Post.Title}}</h1>
       {{if .Post.Excerpt}}
         <p class="blog-post-excerpt">{{.Post.Excerpt}}</p>
