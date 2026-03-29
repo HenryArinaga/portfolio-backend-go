@@ -5,6 +5,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{{block "title" .}}Blog{{end}}</title>
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -221,11 +224,15 @@
         background: var(--color-bg-card);
         border-radius: var(--radius-xl);
         overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.6s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         border: 1px solid rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
+      }
+
+      .js .blog-card {
         opacity: 0;
         transform: translateY(30px);
+        transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.6s ease;
       }
       
       .blog-card.card-visible {
@@ -354,6 +361,9 @@
         padding: var(--space-12);
         border: 1px solid rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
+      }
+
+      .js .blog-post {
         opacity: 0;
         transform: translateY(30px);
         transition: opacity 0.6s ease, transform 0.6s ease;
@@ -691,6 +701,14 @@
       
       // Scroll Animation for Cards
       (function() {
+        const cards = document.querySelectorAll('.blog-card, .blog-post');
+        if (!cards.length) return;
+
+        if (!('IntersectionObserver' in window)) {
+          cards.forEach((card) => card.classList.add('card-visible'));
+          return;
+        }
+
         const observerOptions = {
           threshold: 0.1,
           rootMargin: '0px 0px -50px 0px'
@@ -707,7 +725,7 @@
         }, observerOptions);
         
         // Observe all blog cards
-        document.querySelectorAll('.blog-card, .blog-post').forEach(card => {
+        cards.forEach(card => {
           observer.observe(card);
         });
       })();
