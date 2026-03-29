@@ -364,14 +364,21 @@
       }
 
       .js .blog-post {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: opacity 0.6s ease, transform 0.6s ease;
-      }
-      
-      .blog-post.card-visible {
         opacity: 1;
-        transform: translateY(0);
+        transform: none;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .js .blog-post {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .blog-post.card-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       
       .blog-post-header {
@@ -704,8 +711,9 @@
         const cards = document.querySelectorAll('.blog-card, .blog-post');
         if (!cards.length) return;
 
+        cards.forEach((card) => card.classList.add('card-visible'));
+
         if (!('IntersectionObserver' in window)) {
-          cards.forEach((card) => card.classList.add('card-visible'));
           return;
         }
 
